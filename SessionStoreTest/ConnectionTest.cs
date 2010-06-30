@@ -21,7 +21,7 @@ namespace SessionStoreTest
         public void SetUp()
         {
             var configure = new MongoConfigurationBuilder();
-            configure.ConnectionStringAppSettingKey("mongoserver");           
+            configure.ConnectionString("mongoserver");  
             config = configure.BuildConfiguration();
         }
 
@@ -39,7 +39,7 @@ namespace SessionStoreTest
                 Session session = new Session(id, "AppName", 2, b, items.Count, SessionStateActions.None);
                 using (var mongo = new Mongo(config))
                 {
-                    var sessionStore = SessionStore.Instance;
+                    var sessionStore = new SessionStore("test");
                     sessionStore.Insert(session);
                     i++;
                 }
@@ -69,13 +69,11 @@ namespace SessionStoreTest
             }           
             foreach (string s in ids)
             {
-                var sessionStore = SessionStore.Instance;
+                var sessionStore = new SessionStore("test");
                 sessionStore.UpdateSession(s, 2, b, "AppName", items.Count, 0);
             }
             
         }
-
-
 
         private byte[] Serialize(SessionStateItemCollection items)
         {

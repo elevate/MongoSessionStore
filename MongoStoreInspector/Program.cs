@@ -26,7 +26,7 @@ namespace MongoStoreInspector
             try
             {
                 var configure = new MongoConfigurationBuilder();
-                configure.ConnectionStringAppSettingKey("mongoserver");
+                configure.ConnectionString("mongoserver");
                 var config = configure.BuildConfiguration();
                 options.Parse(args);
             }

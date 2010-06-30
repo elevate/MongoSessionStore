@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Text;
 using System.Collections.Specialized;
 using System.Web;
 using System.Web.Configuration;
@@ -19,6 +18,8 @@ namespace MongoSessionStore
         private SessionStateSection sessionStateSection = null;
         private string eventSource = "MongoSessionStore";
         private string eventLog = "Application";
+        private SessionStore sessionStore;
+
 
         private bool _logExceptions = false;
         public bool WriteExceptionsToEventLog
@@ -32,10 +33,10 @@ namespace MongoSessionStore
         // in the data source by application.
         //
         public string _applicationName;
-        public string ApplicationName
-        {
-            get { return _applicationName; }
-        }
+        //public string ApplicationName
+        //{
+        //    get { return _applicationName; }
+        //}
 
         public override void Initialize(string name, NameValueCollection config)
         {
@@ -55,17 +56,20 @@ namespace MongoSessionStore
 
             _applicationName = System.Web.Hosting.HostingEnvironment.ApplicationVirtualPath;
 
-            Configuration cfg = WebConfigurationManager.OpenWebConfiguration(ApplicationName);
+            Configuration cfg = WebConfigurationManager.OpenWebConfiguration(_applicationName);
             sessionStateSection = (SessionStateSection)cfg.GetSection("system.web/sessionState");
             if (config["writeExceptionsToEventLog"] != null)
             {
                 if (config["writeExceptionsToEventLog"].ToUpper() == "TRUE")
                     _logExceptions = true;
             }
+
+            sessionStore = new SessionStore(_applicationName);
         }
 
         public override void Dispose()
         {
+  
         }
 
         public override bool SetItemExpireCallback(SessionStateItemExpireCallback expireCallback)
@@ -75,7 +79,7 @@ namespace MongoSessionStore
 
         public override void SetAndReleaseItemExclusive(HttpContext context, string id, SessionStateStoreData item, object lockId, bool newItem)
         {
-            var sessionStore = SessionStore.Instance;
+           
             try
             {
 
@@ -96,7 +100,7 @@ namespace MongoSessionStore
                     sessionStore.UpdateSession(id, item.Timeout, sessionItems, this._applicationName, item.Items.Count, lockId);
                 }
             }
-            catch (Exception e)
+            catch (MongoConnectionException e)
             {
                 if (WriteExceptionsToEventLog)
                 {
@@ -155,7 +159,7 @@ namespace MongoSessionStore
             // byte array to hold serialized SessionStateItemCollection.
             byte[] serializedItems = new byte[0];
             
-            var sessionStore = SessionStore.Instance;
+            var sessionStore = new SessionStore(_applicationName);
             try
             {
                 Session session = sessionStore.Get(id, this._applicationName);
@@ -201,7 +205,7 @@ namespace MongoSessionStore
                 }
 
             }
-            catch (Exception e)
+            catch (MongoConnectionException e)
             {
                 if (WriteExceptionsToEventLog)
                 {
@@ -276,7 +280,7 @@ namespace MongoSessionStore
         //
         public override void ReleaseItemExclusive(HttpContext context, string id, object lockId)
         {
-            var sessionStore = SessionStore.Instance;
+            var sessionStore = new SessionStore(_applicationName);
             try
             {
                 sessionStore.ReleaseLock(id, this._applicationName, lockId, sessionStateSection.Timeout.TotalMinutes);
@@ -301,7 +305,7 @@ namespace MongoSessionStore
 
         public override void RemoveItem(HttpContext context, string id, object lockId, SessionStateStoreData item)
         {
-            var sessionStore = SessionStore.Instance;
+            var sessionStore = new SessionStore(this._applicationName);
             try
             {
                 sessionStore.EvictSession(id, this._applicationName, lockId);
@@ -323,7 +327,7 @@ namespace MongoSessionStore
             byte[] serializedItems = new byte[0];
             Binary sessionItems = new Binary(serializedItems);
             Session session = new Session(id, this._applicationName, timeout, sessionItems, 0, SessionStateActions.InitializeItem);
-            var sessionStore = SessionStore.Instance;
+            var sessionStore = new SessionStore(_applicationName);
             try
             {
                 sessionStore.Insert(session);
@@ -347,7 +351,7 @@ namespace MongoSessionStore
 
         public override void ResetItemTimeout(HttpContext context, string id)
         {
-            var sessionStore = SessionStore.Instance;
+            var sessionStore = new SessionStore(_applicationName);
             try
             {
                 sessionStore.UpdateSessionExpiration(id, this._applicationName, sessionStateSection.Timeout.TotalMinutes);
@@ -375,7 +379,7 @@ namespace MongoSessionStore
 
         private void WriteToEventLog(Exception e, string action)
         {
-            EventLog log = new EventLog();
+            EventLog log = new EventLog(eventLog);
             log.Source = eventSource;
             log.Log = eventLog;
 

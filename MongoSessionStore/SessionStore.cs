@@ -1,61 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
 using MongoDB;
 using MongoDB.Configuration;
 using MongoDB.Connections;
-using System.Text;
 
 namespace MongoSessionStore
 {
-    public sealed class SessionStore
+    public class SessionStore
     {
-        static MongoConfigurationBuilder configure = new MongoConfigurationBuilder();
-        static MongoConfiguration config;
-        private static volatile SessionStore instance;
-        private static object syncRoot = new Object();
+        private string applicationName;
+        private string connectionString;
 
-        private SessionStore()
+        public SessionStore(string applicationName)
         {
-            configure = new MongoConfigurationBuilder();
-            configure.ConnectionStringAppSettingKey("mongoserver");
-            config = configure.BuildConfiguration();
+            connectionString = (string)ConfigurationManager.AppSettings["mongoserver"];
+            this.applicationName = applicationName;
         }
-
-        public static SessionStore Instance
-        {
-            get
-            {
-                return SessionStoreInternal.Instance;
-            }
-
-        }
-
-        internal class SessionStoreInternal
-        {
-            internal static readonly SessionStore Instance = new SessionStore();
-
-            static SessionStoreInternal() { }
-        }
-
-
 
         public void Insert(Session session)
         {
             Document newSession = new Document() { { "SessionId",session.SessionID }, {"ApplicationName",session.ApplicationName},{"Created",session.Created},
             {"Expires",session.Expires},{"LockDate",session.LockDate},{"LockId",session.LockID},{"Timeout",session.Timeout},{"Locked",session.Locked},
             {"SessionItems",session.SessionItems},{"SessionItemsCount",session.SessionItemsCount},{"Flags",session.Flags}};
-            try
+
+            using (var mongo = new Mongo(connectionString))
             {
-                using (var mongo = new Mongo(config))
-                {
-                    mongo.Connect();
-                    mongo["session_store"]["sessions"].Insert(newSession);
-                }
-            }
-            catch (MongoException ex)
-            {
-                throw new Exception("Could not insert a new session", ex);
+                mongo.Connect();
+                mongo[applicationName]["sessions"].Insert(newSession);
             }
 
         }
@@ -64,124 +35,93 @@ namespace MongoSessionStore
         {
             Document selector = new Document() { { "SessionId", id }, { "ApplicationName", applicationName } };
             Session session;
-            try
+
+            Document sessionDoc;
+
+            using (var mongo = new Mongo(connectionString))
             {
-
-                Document sessionDoc;
-
-                using (var mongo = new Mongo(config))
-                {
-                    mongo.Connect();
-                    sessionDoc = mongo["session_store"]["sessions"].FindOne(selector);
-                }
-
-                if (sessionDoc == null)
-                {
-                    session = null;
-                }
-                else
-                {
-                    session = new Session(sessionDoc);
-                }
-
+                mongo.Connect();
+                sessionDoc = mongo[applicationName]["sessions"].FindOne(selector);
             }
-            catch (MongoException ex)
+
+            if (sessionDoc == null)
             {
-                throw new Exception("Could not insert a new session", ex);
+                session = null;
             }
+            else
+            {
+                session = new Session(sessionDoc);
+            }
+
+
 
             return session;
         }
 
         public void UpdateSession(string id, int timeout, Binary sessionItems, string applicationName, int sessionItemsCount, object lockId)
         {
-            try
-            {
 
-                Document selector = new Document() { { "SessionId", id }, { "ApplicationName", applicationName }, { "LockId", lockId } };
-                Document session = new Document() { { "$set", new Document() { { "Expires", DateTime.Now.AddMinutes((double)timeout) }, { "Timeout", timeout }, { "Locked", false }, { "SessionItems", sessionItems }, { "SessionItemsCount", sessionItemsCount } } } };
-                using (var mongo = new Mongo(config))
-                {
-                    mongo.Connect();
-                    mongo["session_store"]["sessions"].Update(session, selector, 0, false);
-                }
-            }
-            catch (MongoException ex)
+            Document selector = new Document() { { "SessionId", id }, { "ApplicationName", applicationName }, { "LockId", lockId } };
+            Document session = new Document() { { "$set", new Document() { { "Expires", DateTime.Now.AddMinutes((double)timeout) }, { "Timeout", timeout }, { "Locked", false }, { "SessionItems", sessionItems }, { "SessionItemsCount", sessionItemsCount } } } };
+            using (var mongo = new Mongo(connectionString))
             {
-                throw new Exception("Could not insert a new session", ex);
+                mongo.Connect();
+                mongo[applicationName]["sessions"].Update(session, selector, 0, false);
             }
 
         }
 
         public void UpdateSessionExpiration(string id, string applicationName, double timeout)
         {
-            try
+
+            Document selector = new Document() { { "SessionId", id }, { "ApplicationName", applicationName } };
+            Document sessionUpdate = new Document() { { "$set", new Document() { { "Expires", DateTime.Now.AddMinutes(timeout) } } } };
+            using (var mongo = new Mongo(connectionString))
             {
-                Document selector = new Document() { { "SessionId", id }, { "ApplicationName", applicationName } };
-                Document sessionUpdate = new Document() { { "$set", new Document() { { "Expires", DateTime.Now.AddMinutes(timeout) } } } };
-                using (var mongo = new Mongo(config))
-                {
-                    mongo.Connect();
-                    mongo["session_store"]["sessions"].Update(sessionUpdate, selector, 0, false);
-                }
+                mongo.Connect();
+                mongo[applicationName]["sessions"].Update(sessionUpdate, selector, 0, false);
             }
-            catch (MongoException ex)
-            {
-                throw new Exception("Could not update Session Expiration", ex);
-            }
+
         }
 
         public void EvictSession(Session session)
         {
             Document selector = new Document() { { "SessionId", session.SessionID }, { "ApplicationName", session.ApplicationName }, { "LockId", session.LockID } };
-            try
+
+            using (var mongo = new Mongo(connectionString))
             {
-                using (var mongo = new Mongo(config))
-                {
-                    mongo.Connect();
-                    mongo["session_store"]["sessions"].Remove(selector);
-                }
+                mongo.Connect();
+                mongo[applicationName]["sessions"].Remove(selector);
             }
-            catch (MongoException ex)
-            {
-                throw new Exception("There was a problem when evicting the session with SessionId:" + session.SessionID, ex);
-            }
+
 
         }
 
         public void EvictSession(string id, string applicationName, object lockId)
         {
             Document selector = new Document() { { "SessionId", id }, { "ApplicationName", applicationName }, { "LockId", lockId } };
-            try
+
+            using (var mongo = new Mongo(connectionString))
             {
-                using (var mongo = new Mongo(config))
-                {
-                    mongo.Connect();
-                    mongo["session_store"]["sessions"].Remove(selector);
-                }
+                mongo.Connect();
+                mongo[applicationName]["sessions"].Remove(selector);
             }
-            catch (MongoException ex)
-            {
-                throw new Exception("There was a problem when evicting the session with SessionId:" + id, ex);
-            }
+
+
         }
 
         public void EvictExpiredSession(string id, string applicationName)
         {
             Document selector = new Document() { { "SessionId", id }, { "ApplicationName", applicationName },
             {"Expires",new Document(){{"$lt",DateTime.Now}} }};
-            try
+
+            using (var mongo = new Mongo(connectionString))
             {
-                using (var mongo = new Mongo(config))
-                {
-                    mongo.Connect();
-                    mongo["session_store"]["sessions"].Remove(selector);
-                }
+                mongo.Connect();
+                mongo[applicationName]["sessions"].Remove(selector);
             }
-            catch (MongoException ex)
-            {
-                throw new Exception("There was a problem when evicting the session with SessionId:" + id, ex);
-            }
+
+
         }
 
         public void LockSession(Session session)
@@ -189,18 +129,13 @@ namespace MongoSessionStore
             Document selector = new Document() { { "SessionId", session.SessionID }, { "ApplicationName", session.ApplicationName } };
             Document sessionLock = new Document() { { "$set", new Document() {{"LockDate", DateTime.Now }, 
             {"LockId", session.LockID }, {"Locked", true }, {"Flags",0} } } };
-            try
+
+            using (var mongo = new Mongo(connectionString))
             {
-                using (var mongo = new Mongo(config))
-                {
-                    mongo.Connect();
-                    mongo["session_store"]["sessions"].Update(sessionLock, selector, 0, false);
-                }
+                mongo.Connect();
+                mongo[applicationName]["sessions"].Update(sessionLock, selector, 0, false);
             }
-            catch (MongoException ex)
-            {
-                throw new Exception("There was a problem when locking the session with SessionId:" + session.SessionID, ex);
-            }
+
 
         }
 
@@ -209,18 +144,12 @@ namespace MongoSessionStore
             Document selector = new Document() { { "SessionId", id }, { "ApplicationName", applicationName }, { "LockId", lockId } };
             Document sessionLock = new Document() { { "$set", new Document() { { "Expires", DateTime.Now.AddMinutes(timeout) }, { "Locked", false } } } };
 
-            try
+            using (var mongo = new Mongo(connectionString))
             {
-                using (var mongo = new Mongo(config))
-                {
-                    mongo.Connect();
-                    mongo["session_store"]["sessions"].Update(sessionLock, selector, 0, false);
-                }
+                mongo.Connect();
+                mongo[applicationName]["sessions"].Update(sessionLock, selector, 0, false);
             }
-            catch (MongoException ex)
-            {
-                throw new Exception("There was a problem when releasing the lock for the session with SessionId:" + id, ex);
-            }
+
         }
     }
 }

@@ -29,7 +29,7 @@ namespace SessionStoreTest
         public void SetUp()
         {
             var configure = new MongoConfigurationBuilder();
-            configure.ConnectionStringAppSettingKey("mongoserver");
+            configure.ConnectionString("mongoserver");
             config = configure.BuildConfiguration();
             SessionStateItemCollection sessionItemsCollection = new SessionStateItemCollection();
             HttpStaticObjectsCollection staticObjectsCollection = new HttpStaticObjectsCollection();
@@ -53,7 +53,7 @@ namespace SessionStoreTest
         [Test]
         public void InsertNewSession()
         {
-            var sessionStore = SessionStore.Instance;
+            var sessionStore = new SessionStore("test");
             byte[] serializedItems = Serialize((SessionStateItemCollection)item.Items);
             Binary sessionItems = new Binary(serializedItems);
             string id = Guid.NewGuid().ToString();
@@ -68,12 +68,12 @@ namespace SessionStoreTest
         [Test]
         public void UpdateSession()
         {
-            var sessionStore = SessionStore.Instance;
+            var sessionStore = new SessionStore("test");
             byte[] serializedItems = Serialize((SessionStateItemCollection)item.Items);
             Binary sessionItems = new Binary(serializedItems);
             string id = Guid.NewGuid().ToString();
             Session session = new Session(id, this.ApplicationName, this.Timeout, sessionItems, item.Items.Count, SessionStateActions.None);
-            SessionStore.Instance.Insert(session);
+            sessionStore.Insert(session);
             sessionStore.UpdateSession(id, 5, new Binary(serializedItems), this.ApplicationName, 3, 0);
             Session updatedSession = sessionStore.Get(id, this.ApplicationName);
             Assert.AreEqual(5, updatedSession.Timeout);
@@ -84,12 +84,12 @@ namespace SessionStoreTest
         [Test]
         public void LockSessionAndReleaseLock()
         {
-            var sessionStore = SessionStore.Instance;
+            var sessionStore = new SessionStore("test");
             byte[] serializedItems = Serialize((SessionStateItemCollection)item.Items);
             Binary sessionItems = new Binary(serializedItems);
             string id = Guid.NewGuid().ToString();
             Session session = new Session(id, this.ApplicationName, this.Timeout, sessionItems, item.Items.Count, SessionStateActions.None);
-            SessionStore.Instance.Insert(session);
+            sessionStore.Insert(session);
             DateTime timestamp = DateTime.Now;
             session.LockID = 1;
             sessionStore.LockSession(session);
@@ -108,13 +108,13 @@ namespace SessionStoreTest
         [Test]
         public void InsertNewSessionAndEvictHard()
         {
-            var sessionStore = SessionStore.Instance;
+            var sessionStore = new SessionStore("test");
             byte[] serializedItems = Serialize((SessionStateItemCollection)item.Items);
             Binary sessionItems = new Binary(serializedItems);
             string id = Guid.NewGuid().ToString();
             Session session = new Session(id, this.ApplicationName, this.Timeout, sessionItems, item.Items.Count, SessionStateActions.None);
-            SessionStore.Instance.Insert(session);
-            SessionStore.Instance.EvictSession(session);
+            sessionStore.Insert(session);
+            sessionStore.EvictSession(session);
             Session storedSession = sessionStore.Get(id, this.ApplicationName);
             Assert.IsNull(storedSession); 
         }
@@ -122,7 +122,7 @@ namespace SessionStoreTest
         [Test]
         public void AddExpiredSessionAndEvictSoft()
         {
-            var sessionStore = SessionStore.Instance;
+            var sessionStore = new SessionStore("test");
             byte[] serializedItems = Serialize((SessionStateItemCollection)item.Items);
             Binary sessionItems = new Binary(serializedItems);
             string id = Guid.NewGuid().ToString();
