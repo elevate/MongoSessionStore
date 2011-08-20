@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?><?xml-stylesheet type='text/xsl' href='_UpgradeReport_Files/UpgradeReport.xslt'?><UpgradeLog>
+<Properties><Property Name="Solution" Value="MongoSessionStore">
+</Property><Property Name="Solution File" Value="C:\ElevatePlatform\MongoSessionStore\MongoSessionStore.sln">
+</Property><Property Name="Date" Value="15 July 2011">
+</Property><Property Name="Time" Value="20:05">
+</Property></Properties><Event ErrorLevel="0" Project="MongoSessionStore" Source="MongoSessionStore\MongoSessionStore.csproj" Description="Project converted successfully">
+</Event><Event ErrorLevel="3" Project="MongoSessionStore" Source="MongoSessionStore\MongoSessionStore.csproj" Description="Converted">
+</Event><Event ErrorLevel="0" Project="SessionStoreTest" Source="SessionStoreTest\SessionStoreTest.csproj" Description="Project converted successfully">
+</Event><Event ErrorLevel="3" Project="SessionStoreTest" Source="SessionStoreTest\SessionStoreTest.csproj" Description="Converted">
+</Event><Event ErrorLevel="0" Project="MongoSessionTest" Source="MongoSessionTest\MongoSessionTest.csproj" Description="Project converted successfully">
+</Event><Event ErrorLevel="3" Project="MongoSessionTest" Source="MongoSessionTest\MongoSessionTest.csproj" Description="Converted">
+</Event><Event ErrorLevel="0" Project="MongoStoreInspector" Source="MongoStoreInspector\MongoStoreInspector.csproj" Description="Project converted successfully">
+</Event><Event ErrorLevel="3" Project="MongoStoreInspector" Source="MongoStoreInspector\MongoStoreInspector.csproj" Description="Converted">
+</Event><Event ErrorLevel="0" Project="" Source="MongoSessionStore.sln" Description="Solution converted successfully">
+</Event><Event ErrorLevel="3" Project="" Source="MongoSessionStore.sln" Description="Converted">
+</Event><Event ErrorLevel="0" Project="MongoSessionStore" Source="MongoSessionStore\MongoSessionStore.csproj" Description="Scan complete: Upgrade not required for project files.">
+</Event><Event ErrorLevel="0" Project="SessionStoreTest" Source="SessionStoreTest\SessionStoreTest.csproj" Description="Scan complete: Upgrade not required for project files.">
+</Event><Event ErrorLevel="0" Project="MongoSessionTest" Source="MongoSessionTest\MongoSessionTest.csproj" Description="Scan complete: Upgrade not required for project files.">
+</Event><Event ErrorLevel="0" Project="MongoStoreInspector" Source="MongoStoreInspector\MongoStoreInspector.csproj" Description="Scan complete: Upgrade not required for project files.">
+</Event></UpgradeLog>

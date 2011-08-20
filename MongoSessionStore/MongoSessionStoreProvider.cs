@@ -8,8 +8,7 @@ using System.Configuration;
 using System.Configuration.Provider;
 using System.Web.SessionState;
 using MongoDB;
-using MongoDB.Configuration;
-
+using MongoConnectionException = MongoDB.Driver.MongoConnectionException;
 
 namespace MongoSessionStore
 {
